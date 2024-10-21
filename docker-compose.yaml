@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+    admin_user:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - 8001:8000
+        volumes:
+            - .:/app
+        depends_on:
+            - user_db
+        environment:
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+        networks:
+            - app-network-one
+            - external-redis
+        command: sh -c "composer install && php artisan migrate && php artisan serve --host=0.0.0.0"
+
+    user_db:
+        image: mysql:5.7.22
+        environment:
+            MYSQL_DATABASE: userService
+            MYSQL_USER: root
+            MYSQL_PASSWORD: 123456789
+            MYSQL_ROOT_PASSWORD: 123456789
+        volumes:
+            - ./storage/dbdata:/var/lib/mysql
+        ports:
+            - 33064:3306
+        networks:
+            - app-network-one
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        environment:
+            PMA_HOST: user_db
+            PMA_USER: root
+            PMA_PASSWORD: 123456789
+        ports:
+            - "8083:80"
+        depends_on:
+            - user_db
+        networks:
+            - app-network-one
+
+networks:
+    app-network-one:
+        driver: bridge
+    external-redis:
+        external: true
